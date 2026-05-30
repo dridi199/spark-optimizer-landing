@@ -621,6 +621,46 @@
   .reveal-delay-1 { transition-delay: 0.1s; }
   .reveal-delay-2 { transition-delay: 0.2s; }
   .reveal-delay-3 { transition-delay: 0.3s; }
+
+  /* ── Mobile ── */
+  @media (max-width: 768px) {
+
+    nav { padding: 14px 20px; }
+    .nav-links { display: none; }
+    .btn-primary { padding: 8px 14px; font-size: 12px; }
+
+    .hero { padding: 100px 20px 60px; }
+    .hero-cta { flex-direction: column; align-items: stretch; }
+    .hero-cta a { text-align: center; justify-content: center; }
+
+    .code-preview { overflow-x: auto; }
+    .code-body { min-width: 480px; font-size: 11px; }
+
+    .stats { flex-wrap: wrap; gap: 24px; padding: 32px 20px; }
+    .stat { width: calc(50% - 12px); }
+
+    section { padding: 60px 20px; }
+
+    .features-grid { grid-template-columns: 1fr; }
+
+    .steps { grid-template-columns: 1fr; gap: 40px; }
+    .steps::before { display: none; }
+    .step { text-align: left; display: flex; gap: 16px; align-items: flex-start; }
+    .step-num { flex-shrink: 0; margin: 0; }
+
+    .ap-grid { grid-template-columns: 1fr; }
+
+    .pricing-grid { grid-template-columns: 1fr; }
+    .pricing-card.featured { margin-top: 16px; }
+
+    .cta-section { padding: 60px 20px; }
+    .cta-section .btn-primary { font-size: 13px; padding: 12px 20px; }
+
+    footer { flex-direction: column; gap: 12px; text-align: center; padding: 24px 20px; }
+
+    #how { padding: 60px 20px !important; }
+  }
+
 </style>
 </head>
 <body>
