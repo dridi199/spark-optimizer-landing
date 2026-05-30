@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SparkOptimizer — Optimisez vos jobs Spark en secondes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #080c14;
+    --bg2: #0d1424;
+    --border: #1a2640;
+    --blue: #3b82f6;
+    --purple: #8b5cf6;
+    --green: #10b981;
+    --orange: #f97316;
+    --red: #ef4444;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --mono: 'DM Mono', monospace;
+    --display: 'Syne', sans-serif;
+    --body: 'DM Sans', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--body);
+    overflow-x: hidden;
+  }
+
+  /* ── Noise texture overlay ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.4;
+  }
+
+  /* ── Nav ── */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    padding: 18px 48px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid transparent;
+    transition: all 0.3s;
+    backdrop-filter: blur(0px);
+  }
+
+  nav.scrolled {
+    border-bottom-color: var(--border);
+    backdrop-filter: blur(20px);
+    background: rgba(8,12,20,0.8);
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--display);
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  .logo-icon {
+    width: 32px; height: 32px;
+    background: linear-gradient(135deg, var(--blue), var(--purple));
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+  }
+
+  .nav-links {
+    display: flex;
+    align-items: center;
+    gap: 32px;
+    list-style: none;
+  }
+
+  .nav-links a {
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    transition: color 0.2s;
+  }
+
+  .nav-links a:hover { color: var(--text); }
+
+  .btn-primary {
+    padding: 10px 22px;
+    background: linear-gradient(135deg, var(--blue), var(--purple));
+    border: none;
+    border-radius: 8px;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+    font-family: var(--body);
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: opacity 0.2s, transform 0.2s;
+    letter-spacing: 0.02em;
+  }
+
+  .btn-primary:hover { opacity: 0.85; transform: translateY(-1px); }
+
+  .btn-outline {
+    padding: 10px 22px;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 500;
+    font-family: var(--body);
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s;
+  }
+
+  .btn-outline:hover { border-color: var(--blue); color: var(--blue); }
+
+  /* ── Hero ── */
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 120px 48px 80px;
+    position: relative;
+  }
+
+  /* Glow background */
+  .hero::after {
+    content: '';
+    position: absolute;
+    top: 20%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 600px;
+    height: 400px;
+    background: radial-gradient(ellipse, rgba(59,130,246,0.12) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    background: rgba(59,130,246,0.1);
+    border: 1px solid rgba(59,130,246,0.3);
+    border-radius: 20px;
+    font-size: 12px;
+    font-family: var(--mono);
+    color: var(--blue);
+    margin-bottom: 32px;
+    animation: fadeUp 0.6s ease both;
+  }
+
+  .badge-dot {
+    width: 6px; height: 6px;
+    background: var(--green);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  h1 {
+    font-family: var(--display);
+    font-size: clamp(42px, 7vw, 80px);
+    font-weight: 800;
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+    margin-bottom: 24px;
+    animation: fadeUp 0.6s 0.1s ease both;
+  }
+
+  h1 .accent {
+    background: linear-gradient(135deg, var(--blue), var(--purple));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .hero-sub {
+    font-size: 18px;
+    color: var(--muted);
+    max-width: 560px;
+    line-height: 1.7;
+    margin-bottom: 40px;
+    font-weight: 300;
+    animation: fadeUp 0.6s 0.2s ease both;
+  }
+
+  .hero-cta {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    justify-content: center;
+    animation: fadeUp 0.6s 0.3s ease both;
+    margin-bottom: 64px;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── Code preview ── */
+  .code-preview {
+    width: 100%;
+    max-width: 760px;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    text-align: left;
+    animation: fadeUp 0.6s 0.4s ease both;
+    box-shadow: 0 40px 80px rgba(0,0,0,0.4);
+  }
+
+  .code-bar {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255,255,255,0.02);
+  }
+
+  .code-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+  }
+
+  .code-title {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    margin-left: 8px;
+  }
+
+  .code-body {
+    padding: 20px 24px;
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.8;
+  }
+
+  .c-comment { color: #4a5568; }
+  .c-key { color: #8b5cf6; }
+  .c-val { color: #10b981; }
+  .c-str { color: #f97316; }
+  .c-op { color: #3b82f6; }
+  .c-warn { color: #ef4444; }
+  .c-info { color: #f59e0b; }
+
+  /* ── Stats ── */
+  .stats {
+    display: flex;
+    gap: 48px;
+    justify-content: center;
+    padding: 40px 48px;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    margin: 0;
+  }
+
+  .stat {
+    text-align: center;
+  }
+
+  .stat-num {
+    font-family: var(--display);
+    font-size: 36px;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--blue), var(--purple));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .stat-label {
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  /* ── Section ── */
+  section {
+    padding: 100px 48px;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .section-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--blue);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+
+  .section-title {
+    font-family: var(--display);
+    font-size: clamp(28px, 4vw, 42px);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+    margin-bottom: 16px;
+  }
+
+  .section-sub {
+    font-size: 16px;
+    color: var(--muted);
+    line-height: 1.7;
+    max-width: 520px;
+  }
+
+  /* ── Features ── */
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-top: 56px;
+  }
+
+  .feature-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px;
+    transition: border-color 0.2s, transform 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .feature-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--blue), var(--purple));
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  .feature-card:hover {
+    border-color: rgba(59,130,246,0.3);
+    transform: translateY(-2px);
+  }
+
+  .feature-card:hover::before { opacity: 1; }
+
+  .feature-icon {
+    width: 40px; height: 40px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    margin-bottom: 16px;
+  }
+
+  .feature-title {
+    font-family: var(--display);
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+
+  .feature-desc {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
+  /* ── How it works ── */
+  .steps {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0;
+    margin-top: 56px;
+    position: relative;
+  }
+
+  .steps::before {
+    content: '';
+    position: absolute;
+    top: 28px;
+    left: 16.6%;
+    right: 16.6%;
+    height: 1px;
+    background: linear-gradient(90deg, var(--blue), var(--purple));
+    opacity: 0.4;
+  }
+
+  .step {
+    padding: 0 24px;
+    text-align: center;
+  }
+
+  .step-num {
+    width: 56px; height: 56px;
+    border-radius: 50%;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono);
+    font-size: 14px;
+    color: var(--blue);
+    margin: 0 auto 20px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .step-title {
+    font-family: var(--display);
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+
+  .step-desc {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
+  /* ── Antipatterns showcase ── */
+  .ap-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 48px;
+  }
+
+  .ap-card {
+    background: var(--bg2);
+    border-radius: 10px;
+    padding: 20px;
+    border-left: 3px solid;
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+  }
+
+  .ap-badge {
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-weight: 500;
+    white-space: nowrap;
+    margin-top: 2px;
+  }
+
+  .ap-title { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+  .ap-desc { font-size: 12px; color: var(--muted); line-height: 1.5; }
+
+  /* ── Pricing ── */
+  .pricing-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-top: 56px;
+    align-items: start;
+  }
+
+  .pricing-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 32px;
+    position: relative;
+  }
+
+  .pricing-card.featured {
+    border-color: var(--blue);
+    background: linear-gradient(135deg, rgba(59,130,246,0.08), rgba(139,92,246,0.08));
+  }
+
+  .pricing-badge {
+    position: absolute;
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(135deg, var(--blue), var(--purple));
+    padding: 4px 16px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .pricing-plan {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--blue);
+    letter-spacing: 0.1em;
+    margin-bottom: 8px;
+  }
+
+  .pricing-price {
+    font-family: var(--display);
+    font-size: 40px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    margin-bottom: 4px;
+  }
+
+  .pricing-period {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 24px;
+  }
+
+  .pricing-features {
+    list-style: none;
+    margin-bottom: 28px;
+  }
+
+  .pricing-features li {
+    font-size: 13px;
+    color: var(--muted);
+    padding: 6px 0;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .pricing-features li:last-child { border-bottom: none; }
+
+  .check { color: var(--green); font-size: 12px; }
+  .cross { color: var(--muted); font-size: 12px; }
+
+  /* ── CTA final ── */
+  .cta-section {
+    text-align: center;
+    padding: 100px 48px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .cta-section::before {
+    content: '';
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 800px; height: 400px;
+    background: radial-gradient(ellipse, rgba(139,92,246,0.1) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .cta-section h2 {
+    font-family: var(--display);
+    font-size: clamp(32px, 5vw, 54px);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    margin-bottom: 16px;
+  }
+
+  .cta-section p {
+    font-size: 16px;
+    color: var(--muted);
+    margin-bottom: 40px;
+  }
+
+  /* ── Footer ── */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 32px 48px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  footer p {
+    font-size: 13px;
+    color: var(--muted);
+    font-family: var(--mono);
+  }
+
+  /* ── Scroll reveal ── */
+  .reveal {
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+  }
+
+  .reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .reveal-delay-1 { transition-delay: 0.1s; }
+  .reveal-delay-2 { transition-delay: 0.2s; }
+  .reveal-delay-3 { transition-delay: 0.3s; }
+</style>
+</head>
+<body>
+
+<!-- Nav -->
+<nav id="nav">
+  <div class="logo">
+    <div class="logo-icon">⚡</div>
+    SparkOptimizer
+  </div>
+  <ul class="nav-links">
+    <li><a href="#features">Fonctionnalités</a></li>
+    <li><a href="#how">Comment ça marche</a></li>
+    <li><a href="#pricing">Tarifs</a></li>
+  </ul>
+  <a href="https://spark-kugvwac3q-althayr-s-projects.vercel.app" class="btn-primary" target="_blank">
+    Essayer gratuitement →
+  </a>
+</nav>
+
+<!-- Hero -->
+<div class="hero">
+  <div class="badge">
+    <div class="badge-dot"></div>
+    Analyse IA en temps réel
+  </div>
+
+  <h1>
+    Optimisez vos jobs<br>
+    <span class="accent">Spark en secondes</span>
+  </h1>
+
+  <p class="hero-sub">
+    Paste votre <code style="font-family:var(--mono);font-size:14px;color:var(--blue)">explain()</code> Spark,
+    détectez automatiquement les anti-patterns critiques et recevez des recommandations concrètes avec le code corrigé.
+  </p>
+
+  <div class="hero-cta">
+    <a href="https://spark-kugvwac3q-althayr-s-projects.vercel.app" class="btn-primary" target="_blank">
+      Analyser un plan Spark →
+    </a>
+    <a href="#how" class="btn-outline">Voir comment ça marche</a>
+  </div>
+
+  <!-- Code preview -->
+  <div class="code-preview">
+    <div class="code-bar">
+      <div class="code-dot" style="background:#ef4444"></div>
+      <div class="code-dot" style="background:#f59e0b"></div>
+      <div class="code-dot" style="background:#10b981"></div>
+      <span class="code-title">spark_job.py — explain(True) output</span>
+    </div>
+    <div class="code-body">
+      <div><span class="c-comment">== Physical Plan ==</span></div>
+      <div><span class="c-warn">*(5) SortMergeJoin</span> <span class="c-val">[customer_id#10], [id#20]</span>, Inner</div>
+      <div>:- *(2) Sort [customer_id#10 ASC], false, 0</div>
+      <div>:  +- <span class="c-info">Exchange hashpartitioning(customer_id#10, <span class="c-warn">200</span>)</span></div>
+      <div>:     +- FileScan parquet orders <span class="c-info">PushedFilters: []</span></div>
+      <div>+- *(4) Sort [id#20 ASC], false, 0</div>
+      <div>   +- <span class="c-info">Exchange hashpartitioning(id#20, <span class="c-warn">200</span>)</span></div>
+      <br>
+      <div><span class="c-comment">// ── SparkOptimizer détecte ──────────────────</span></div>
+      <div><span class="c-warn">⚠ WARNING</span>  SortMergeJoin — Broadcast possible ?</div>
+      <div><span class="c-warn">⚠ WARNING</span>  200 partitions (valeur par défaut)</div>
+      <div><span class="c-warn">⚠ WARNING</span>  Pas de Predicate Pushdown (x2)</div>
+      <br>
+      <div><span class="c-comment">// ── Fix suggéré ─────────────────────────────</span></div>
+      <div><span class="c-op">df_customers</span>.<span class="c-key">hint</span>(<span class="c-str">'broadcast'</span>).<span class="c-key">join</span>(<span class="c-op">df_orders</span>, <span class="c-str">'customer_id'</span>)</div>
+      <div><span class="c-key">spark</span>.conf.set(<span class="c-str">'spark.sql.adaptive.enabled'</span>, <span class="c-str">'true'</span>)</div>
+    </div>
+  </div>
+</div>
+
+<!-- Stats -->
+<div class="stats">
+  <div class="stat">
+    <div class="stat-num">7+</div>
+    <div class="stat-label">Anti-patterns détectés</div>
+  </div>
+  <div class="stat">
+    <div class="stat-num">&lt; 3s</div>
+    <div class="stat-label">Temps d'analyse</div>
+  </div>
+  <div class="stat">
+    <div class="stat-num">2</div>
+    <div class="stat-label">Modes d'analyse</div>
+  </div>
+  <div class="stat">
+    <div class="stat-num">100%</div>
+    <div class="stat-label">Multi-cloud</div>
+  </div>
+</div>
+
+<!-- Features -->
+<section id="features">
+  <div class="reveal">
+    <div class="section-label">Fonctionnalités</div>
+    <h2 class="section-title">Tout ce qu'il faut pour<br>optimiser vos pipelines</h2>
+    <p class="section-sub">De l'analyse statique du plan d'exécution aux métriques réelles du Spark History Server.</p>
+  </div>
+
+  <div class="features-grid">
+    <div class="feature-card reveal reveal-delay-1">
+      <div class="feature-icon" style="background:rgba(59,130,246,0.15)">🔍</div>
+      <div class="feature-title">Analyse du plan Spark</div>
+      <div class="feature-desc">Parse automatiquement l'output de <code style="font-family:var(--mono);font-size:11px">explain(True)</code> et classifie chaque nœud du plan physique.</div>
+    </div>
+    <div class="feature-card reveal reveal-delay-2">
+      <div class="feature-icon" style="background:rgba(239,68,68,0.15)">⚡</div>
+      <div class="feature-title">Détection d'anti-patterns</div>
+      <div class="feature-desc">Cartesian products, SortMergeJoin évitable, shuffles excessifs, absence de predicate pushdown et plus encore.</div>
+    </div>
+    <div class="feature-card reveal reveal-delay-3">
+      <div class="feature-icon" style="background:rgba(139,92,246,0.15)">🤖</div>
+      <div class="feature-title">Recommandations IA</div>
+      <div class="feature-desc">Analyse LLM qui génère des recommandations priorisées avec le code Spark ou la config exacte à appliquer.</div>
+    </div>
+    <div class="feature-card reveal reveal-delay-1">
+      <div class="feature-icon" style="background:rgba(16,185,129,0.15)">📊</div>
+      <div class="feature-title">History Server</div>
+      <div class="feature-desc">Upload le JSON du Spark History Server pour analyser le data skew réel, les spills mémoire et la pression GC.</div>
+    </div>
+    <div class="feature-card reveal reveal-delay-2">
+      <div class="feature-icon" style="background:rgba(249,115,22,0.15)">🌐</div>
+      <div class="feature-title">Multi-cloud</div>
+      <div class="feature-desc">Compatible Databricks, AWS EMR, GCP Dataproc, Azure HDInsight. Fonctionne avec tout cluster Spark.</div>
+    </div>
+    <div class="feature-card reveal reveal-delay-3">
+      <div class="feature-icon" style="background:rgba(245,158,11,0.15)">🔢</div>
+      <div class="feature-title">Score de performance</div>
+      <div class="feature-desc">Un score /100 synthétique pour évaluer rapidement la qualité d'un job et suivre les progrès d'optimisation.</div>
+    </div>
+  </div>
+</section>
+
+<!-- How it works -->
+<section id="how" style="background:var(--bg2);max-width:100%;padding:100px 48px;border-top:1px solid var(--border);border-bottom:1px solid var(--border)">
+  <div style="max-width:1100px;margin:0 auto">
+    <div class="reveal">
+      <div class="section-label">Comment ça marche</div>
+      <h2 class="section-title">3 étapes, des résultats immédiats</h2>
+    </div>
+    <div class="steps reveal">
+      <div class="step">
+        <div class="step-num">01</div>
+        <div class="step-title">Paste votre plan</div>
+        <div class="step-desc">Copiez l'output de <code style="font-family:var(--mono);font-size:11px;color:var(--blue)">df.explain(True)</code> ou uploadez votre JSON History Server.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">02</div>
+        <div class="step-title">Analyse en temps réel</div>
+        <div class="step-desc">Le parser détecte les anti-patterns et l'IA génère un diagnostic complet en moins de 3 secondes.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">03</div>
+        <div class="step-title">Appliquez les fixes</div>
+        <div class="step-desc">Chaque recommandation inclut le code Spark ou la configuration exacte à copier-coller dans votre job.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Anti-patterns -->
+<section>
+  <div class="reveal">
+    <div class="section-label">Anti-patterns détectés</div>
+    <h2 class="section-title">Les problèmes que nous<br>identifions pour vous</h2>
+  </div>
+  <div class="ap-grid reveal">
+    <div class="ap-card" style="border-color:var(--red)">
+      <span class="ap-badge" style="background:rgba(239,68,68,0.15);color:var(--red)">CRITIQUE</span>
+      <div>
+        <div class="ap-title">Cartesian Product</div>
+        <div class="ap-desc">Join sans condition → complexité O(n×m). Peut faire crasher votre cluster.</div>
+      </div>
+    </div>
+    <div class="ap-card" style="border-color:var(--orange)">
+      <span class="ap-badge" style="background:rgba(249,115,22,0.15);color:var(--orange)">ATTENTION</span>
+      <div>
+        <div class="ap-title">SortMergeJoin évitable</div>
+        <div class="ap-desc">2 shuffles + 2 sorts inutiles si une table est broadcastable.</div>
+      </div>
+    </div>
+    <div class="ap-card" style="border-color:var(--orange)">
+      <span class="ap-badge" style="background:rgba(249,115,22,0.15);color:var(--orange)">ATTENTION</span>
+      <div>
+        <div class="ap-title">Data Skew</div>
+        <div class="ap-desc">Tâches déséquilibrées (ratio &gt;5x) → une partition ralentit tout le job.</div>
+      </div>
+    </div>
+    <div class="ap-card" style="border-color:var(--orange)">
+      <span class="ap-badge" style="background:rgba(249,115,22,0.15);color:var(--orange)">ATTENTION</span>
+      <div>
+        <div class="ap-title">Spill mémoire</div>
+        <div class="ap-desc">Données écrites sur disque → ralentissement drastique des shuffles.</div>
+      </div>
+    </div>
+    <div class="ap-card" style="border-color:var(--blue)">
+      <span class="ap-badge" style="background:rgba(59,130,246,0.15);color:var(--blue)">INFO</span>
+      <div>
+        <div class="ap-title">200 partitions par défaut</div>
+        <div class="ap-desc">Valeur par défaut rarement optimale. Trop élevé ou trop faible selon le volume.</div>
+      </div>
+    </div>
+    <div class="ap-card" style="border-color:var(--orange)">
+      <span class="ap-badge" style="background:rgba(249,115,22,0.15);color:var(--orange)">ATTENTION</span>
+      <div>
+        <div class="ap-title">Pas de Predicate Pushdown</div>
+        <div class="ap-desc">Toutes les données lues avant filtrage → I/O inutiles sur le stockage.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Pricing -->
+<section id="pricing" style="background:var(--bg2);max-width:100%;padding:100px 48px;border-top:1px solid var(--border)">
+  <div style="max-width:1100px;margin:0 auto">
+    <div class="reveal" style="text-align:center">
+      <div class="section-label">Tarifs</div>
+      <h2 class="section-title">Simple et transparent</h2>
+      <p class="section-sub" style="margin:0 auto">Commencez gratuitement, évoluez selon vos besoins.</p>
+    </div>
+    <div class="pricing-grid reveal">
+      <div class="pricing-card">
+        <div class="pricing-plan">FREE</div>
+        <div class="pricing-price">0€</div>
+        <div class="pricing-period">pour toujours</div>
+        <ul class="pricing-features">
+          <li><span class="check">✓</span> 5 analyses / mois</li>
+          <li><span class="check">✓</span> Analyse statique complète</li>
+          <li><span class="check">✓</span> Détection anti-patterns</li>
+          <li><span class="cross">—</span> Recommandations IA</li>
+          <li><span class="cross">—</span> History Server</li>
+          <li><span class="cross">—</span> Support prioritaire</li>
+        </ul>
+        <a href="https://spark-kugvwac3q-althayr-s-projects.vercel.app" class="btn-outline" style="width:100%;justify-content:center">Commencer</a>
+      </div>
+
+      <div class="pricing-card featured">
+        <div class="pricing-badge">Le plus populaire</div>
+        <div class="pricing-plan">PRO</div>
+        <div class="pricing-price">29€</div>
+        <div class="pricing-period">par mois</div>
+        <ul class="pricing-features">
+          <li><span class="check">✓</span> Analyses illimitées</li>
+          <li><span class="check">✓</span> Analyse statique complète</li>
+          <li><span class="check">✓</span> Recommandations IA</li>
+          <li><span class="check">✓</span> History Server JSON</li>
+          <li><span class="check">✓</span> Score /100</li>
+          <li><span class="cross">—</span> Support prioritaire</li>
+        </ul>
+        <a href="#" class="btn-primary" style="width:100%;justify-content:center">Démarrer l'essai</a>
+      </div>
+
+      <div class="pricing-card">
+        <div class="pricing-plan">TEAM</div>
+        <div class="pricing-price">99€</div>
+        <div class="pricing-period">par mois · jusqu'à 10 users</div>
+        <ul class="pricing-features">
+          <li><span class="check">✓</span> Tout le plan Pro</li>
+          <li><span class="check">✓</span> 10 membres d'équipe</li>
+          <li><span class="check">✓</span> Historique des analyses</li>
+          <li><span class="check">✓</span> Rapports partagés</li>
+          <li><span class="check">✓</span> Support prioritaire</li>
+          <li><span class="check">✓</span> Onboarding dédié</li>
+        </ul>
+        <a href="mailto:contact@sparkoptimizer.io" class="btn-outline" style="width:100%;justify-content:center">Contacter</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<div class="cta-section">
+  <h2>Prêt à accélérer<br><span style="background:linear-gradient(135deg,var(--blue),var(--purple));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">vos jobs Spark ?</span></h2>
+  <p>Rejoignez les ingénieurs data qui optimisent leurs pipelines avec SparkOptimizer.</p>
+  <a href="https://spark-kugvwac3q-althayr-s-projects.vercel.app" class="btn-primary" style="font-size:15px;padding:14px 32px">
+    Essayer gratuitement — sans carte bancaire →
+  </a>
+</div>
+
+<!-- Footer -->
+<footer>
+  <div class="logo" style="font-size:15px">
+    <div class="logo-icon" style="width:26px;height:26px;font-size:13px">⚡</div>
+    SparkOptimizer
+  </div>
+  <p>© 2025 SparkOptimizer · Optimisez. Livrez. Performez.</p>
+  <p style="font-size:12px">Built with FastAPI · Groq · React</p>
+</footer>
+
+<script>
+  // Nav scroll effect
+  window.addEventListener('scroll', () => {
+    document.getElementById('nav').classList.toggle('scrolled', window.scrollY > 20);
+  });
+
+  // Scroll reveal
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('visible');
+        observer.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.1 });
+
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+</script>
+</body>
+</html>
